@@ -39,12 +39,16 @@
 		<li> rock_capture : 94500900Hz. 0dB gain. </li>
 		<li> lower freq capture : 27772000Hz. Also with 10dB gain.</li>
 	</ul>
+	Each of these files take up 50MB of memory. Therefore, if I had to guess, there are 2 bytes per sample: one byte for In-phase and the other for Quadrature.
+	We can start with the assumption that these are time-based samples, so the first 2 bytes are from sample 1 at time 0.4 microseconds. The last sample is
+	at 10 seconds.
         
         <h1> Questions </h1>
         The following questions came up while I was writing this program
         <ol>
         <li> How to return a multidimensional array from a function? </li>
 	<li> How to convert from string to int</li>
+	<li> How to read from a binary data file if you don't know the format </li>
         </ol>
     </body>
 </html>

@@ -10,6 +10,7 @@
 struct input_files{
 	char **files;
 	int num_files;
+	int chosen_file;
 	int f:1;
 };
 
@@ -18,8 +19,10 @@ struct input_files listfiles(){
 	struct dirent *dir;
 	struct input_files captures;
 	char directory[] = "./captures";
+	//allocate memory for MAX_FILENUM amount of char pointers.
 	captures.files = malloc(MAX_FILENUM*sizeof(char*));
 	for(int i=0;i<10;i++){
+		//allocate memory for MAX_FILELEN characters in a filename.
 		captures.files[i] = malloc(MAX_FILELEN*sizeof(char));
 	}
 	
@@ -47,20 +50,36 @@ struct input_files listfiles(){
 	}
 }
 
-void getfile(struct input_files captures){
+struct input_files getfile(struct input_files captures){
 	printf("Please enter the number of the file you wish to read: ");
 	char input[MAX_FILELEN];
 	fgets(input,MAX_FILELEN,stdin);
 	int val = atoi(input);
-	printf("\nNumber you chose: %d\nAffiliated File: %s\n",val,captures.files[val-1]);
-	printf("Number of captures: %d\n",captures.num_files);
+	captures.chosen_file = val;
+	//printf("\nNumber you chose: %d\nAffiliated File: %s\n",val,captures.files[val-1]);
+	//printf("Number of captures: %d\n",captures.num_files);
+	return captures;
+}
+
+void decode(struct input_files captures){
+	FILE *fm_file;
+	fm_file = fopen(captures.files[captures.chosen_file-1], "r");
+	char buff[250];
+	
+	//location in memory, size in bytes of elements, number of elements to read, file to read from.
+	fread(buff,1,100,fm_file);
+	printf("The first byte: %d\n",buff[1]);
+	
+	fclose(fm_file);
 }
 
 
 int main(){
 	struct input_files captures = listfiles();
 	if(captures.f == 0){
-		getfile(captures);
+		captures = getfile(captures);
+		printf("Now decoding %s...\n",captures.files[captures.chosen_file-1]);
+		decode(captures);
 	}
 	else{
 		printf("exiting...\n");
