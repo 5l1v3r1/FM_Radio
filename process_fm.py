@@ -1,6 +1,9 @@
+import os
 from os import listdir
 from os.path import isfile, join
 import capture_info as ci
+import cmath
+import math
 
 global CAPTURE_PATH
 CAPTURE_PATH = "./captures/"
@@ -16,7 +19,7 @@ def choose_file():
 	
     no_val = True
     while(no_val):
-        filechoice = input("Please enter the number of the file you would like to process:")
+        filechoice = input("Please enter the number of the file you would like to process: ")
         try:
             filechoice = int(filechoice)
             if(filechoice > 0 and filechoice <= numfiles):
@@ -28,32 +31,19 @@ def choose_file():
             print("Enter a number between 1 and {}.".format(numfiles))
     return myfiles[filechoice]
 
-##  converts bytes type to int.
-##  I should improve the robustness of this function
-##  by allowing it to also accept signed and little endian input.
-def byte2int(byte,signed=False,bigendian=True):
-    byte = str(byte)
-    print(byte)
-    a= byte.index('x')+1
-    b= len(byte)-1
-    print(a)
-    print(b)
-    hex_data = byte[a:b]
-    print(hex_data)
-    return int(hex_data,16)
-
 ##  reads the binary file and returns the signal in complex form.
 def read_file(filename):
     mypath = CAPTURE_PATH+filename
     signal = []
-    with open(mypath,"rb") as inputfile:
-        re = byte2int(inputfile.read(1))
-        im = byte2int(inputfile.read(1))
-        print("{} + {}j".format(re,im))
-        raise ValueError
-        re = int(re,16)-127.5
-        im = int(im,16)-127.5
-        signal.append(re+j*im)
+    num_iqpairs = os.path.getsize(mypath)//2
+    inputfile = os.open(mypath,os.O_RDONLY)
+    for b in range(0,num_iqpairs):
+        re_b = os.read(inputfile,1)
+        im_b = os.read(inputfile,1)
+        re = int.from_bytes(re_b,byteorder='big',signed=False)-127.5
+        im = int.from_bytes(im_b,byteorder='big',signed=False)-127.5
+        signal.append(complex(re,im))
+    os.close(inputfile)
     return signal
 
 ##  main function
