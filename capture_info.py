@@ -9,14 +9,14 @@ from os.path import isfile, join
 import process_fm as px
 
 global BLACKLIST
-BLACKLIST = ["metadata.txt"]
+BLACKLIST = ["preprocessed","metadata.txt","__pycache__"]
 
 #stores all of the pertinent info for the capture files
 class File:
     def __init__(self,entry):
         File.name = entry[0]
         File.sample_rate = int(entry[1])
-        File.sample_period = int(entry[2])
+        File.capture_period = int(entry[2])
         File.gain = int(entry[3])
 
 
@@ -51,13 +51,13 @@ def add_entry(myfiles,database):
                 metadata.write(metadataentry)
                 break
         if(flag == -1):
-            sample_rate=input("What is the sample rate of {} in Hz:".format(filename))
-            sample_period = input("What is the sample period of {} in s:".format(filename))
-            gain = input("What is the gain of {} in dB".format(filename))
-            dbentry = [filename,sample_rate,sample_period,gain]
+            sample_rate=input("What is the sample rate of {} in Hz: ".format(filename))
+            capture_period = input("What is the capture period of {} in s: ".format(filename))
+            gain = input("What is the gain of {} in dB: ".format(filename))
+            dbentry = [filename,sample_rate,capture_period,gain]
             database.append(dbentry)
             metadataentry = ",".join(dbentry)
-            metadata.write(metadataentry)
+            metadata.write('\n'+metadataentry)
 
     metadata.close()
     return database
@@ -72,9 +72,7 @@ def update_metadata():
         metadata.readline() #metatext
     except:
         num_files = 0
-    myfiles = [f for f in listdir(px.CAPTURE_PATH) if isfile(join(".", f))]
-    print(px.CAPTURE_PATH)
-    print(myfiles)
+    myfiles = [f for f in listdir(px.CAPTURE_PATH)]
     for blacklisted in BLACKLIST:
         myfiles.remove(blacklisted)
     num_captures = len(myfiles)
@@ -88,6 +86,7 @@ def update_metadata():
         fileinfo = fileinfo.split(',')
         database.append(fileinfo)
     metadata.close()
+
 
     if(num_files < len(myfiles)):
         database = add_entry(myfiles,database)

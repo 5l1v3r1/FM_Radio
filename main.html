@@ -122,13 +122,14 @@
 	Sample 2: \[\pi /4 [rad]\]
 	Sample 3: \[\pi / 2 [rad]\]
 	Given the phase of these 3 samples, what is the phase change (assuming a constant signal and sample frequency)? Instinct might tell you it is \(\pi /4\). That would be possible. But so would \(\pi /4 + 2\pi N\) where \(N\) is any integer. How can we tell for certain which frequency
-	it actually is? The only thing we can assume is that the phase change is \(\pi /4\) and that the signal frequency would be \(\frac{\Delta \phi}{2\pi f_s}\) where \(\Delta \phi\) is the change in phase between samples. A phase change of exactly \(\pi /2\) between samples should correspond
-	to the maximum frequency we can sample, which according to Nyquist, is 2 times our sampling frequency. In the case of some of the radio captures, our sample frequency was 2.5MHz, so a phase change of \(\pi /2\) corresponds to a frequency of 1.25 MHz and a phase change of \(-\pi /2\) corresponds
+	it actually is? The only thing we can assume is that the phase change is \(\pi /4\) and that the signal frequency would be \(\frac{\Delta \phi}{2\pi f_s}\) where \(\Delta \phi\) is the change in phase between samples. A phase change of exactly \(\pi\) between samples should correspond
+	to the maximum frequency we can sample, which according to Nyquist, is 2 times our sampling frequency. In the case of some of the radio captures, our sample frequency was 2.5MHz, so a phase change of \(\pi\) corresponds to a frequency of 1.25 MHz and a phase change of \(-\pi\) corresponds
 	to a frequency of -1.25 MHz (as long as our 0 Hz signal corresponds to the tuned downconverted frequency).
 	</p>
 	<p>
-	Thus, this is the function of the PLL. If the VCO outputs 0 Hz and our input signal is 1.25MHz, the error signal is \(\pi /2\). The VCO sees this error signal and starts to increase its frequency to 1.25MHz. If the input frequency matches the VCO, we get no error signal and the VCO doesn't change
-	frequency. A decrease in the input frequency's signal will correspond to a negative phase shift (assume the input signal went back to 0Hz while the VCO is still 1.25MHz, we would get a \(-\pi /2\) phase shift) and the VCO would start decreasing its frequency. 
+	Thus, this is the function of the PLL. If the VCO outputs 0 Hz and our input signal is 1.25MHz, the error signal is \(\pi\). The VCO sees this error signal and starts to increase its frequency to 1.25MHz. If the input frequency matches the VCO, we get no error signal and the VCO doesn't change
+	frequency. A decrease in the input frequency's signal will correspond to a negative phase shift (assume the input signal went back to 0Hz while the VCO is still 1.25MHz, we would get a \(-\pi\) phase shift) and the VCO would start decreasing its frequency. 
+	
 	</p>
 	<h3> Low Pass Filter </h3>
 	Given the voltage of the error signal, the low pass filter models a simple RC circuit to determine the filtered output voltage level. You can model the output voltage with a first order differential equation:
@@ -167,8 +168,12 @@
 	We can now design \(RC\) based on our desired cutoff frequency.
 	
 	<h3> Voltage Controlled Oscillator </h3>
-	Given the frequency range of outputs of the error signal (in our case -1.25MHz to 1.25MHz), the voltage controlled oscillator will proportionally adjust its frequency.
-	
+	Given the frequency range of outputs of the error signal (in our case -1.25MHz to 1.25MHz), the voltage controlled oscillator will proportionally adjust its frequency. To model this:
+	We know we will have an error signal that will deviate from \(-\pi\) to \(\pi\) so let's divide the error by \(\pi\) to normalize the error's range from -1 to 1: \[\frac{\mathrm{error}}{\pi}\]
+	We know our output should be the same frequency range of our input, which is \((-f_s/2,f_s/2)\) so we multiply the normalized error to get the VCO output frequency: \[f_{\mathrm{vco}} = \frac{\mathrm{error}}{\pi}*\frac{f_s}{2}\]
+	At the phase detector we are ultimately comparing the phase of the incoming signal and not the frequency. We know our sample period, \(T\), so let's just convert this frequency to a phase change: \[\Delta \phi_{\mathrm{vco}} = 2\pi f_{\mathrm{vco}} T\]
+	Substituting the previous two equations, we get the phase change: \[\Delta \phi_{\mathrm{vco}} = 2T\mathrm{error}\frac{f_s}{2}\]
+	Now, we just add this phase change to the previous phase of the VCO to get the new VCO phase.
 
         <h1> What I Learned </h1>
         <ul> 
