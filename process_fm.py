@@ -86,13 +86,17 @@ def plot(signal,signal_info, flag):
         plt.axis([0,signal_info.capture_period,min(signal),max(signal)])
         plt.show()
     else:
+        signal_fft = numpy.fft.fft(signal)
+        for i in range(0,len(signal_fft)):
+            temp = 20*math.log10(abs(signal_fft[i]))
+            signal_fft[i] = temp
         freqscale = []
-        numsamples = len(signal)
+        numsamples = len(signal_fft)
         step = signal_info.sample_rate/numsamples
         for i in range(0,numsamples):
             freqscale.append((-1*signal_info.sample_rate/2)+i*step)
-        plt.plot(freqscale,signal)
-        plt.axis([(-1*signal_info.sample_rate/2),(signal_info.sample_rate/2),0,max(signal)])
+        plt.plot(freqscale,signal_fft)
+        plt.axis([(-1*signal_info.sample_rate/2),(signal_info.sample_rate/2),0,max(signal_fft)])
         plt.show()
     return
 
@@ -104,6 +108,33 @@ def wrap_subtract(phase1,phase2):
         return sign*phaseerr
     else:
         return phase1-phase2
+
+##  low pass filters and decimates the signal according to the factor.
+##  the purpose of this is to tune out any other radio signals
+def decimate(signal,signal_info,factor):
+    # low pass filter the signal
+    f_c = signal_info.sample_rate/(2*factor)
+    sample_period = 1/signal_info.sample_rate
+    numsamples = len(signal)
+    lowpass = [complex(0,0)]
+
+    plot(signal,signal_info,1)
+
+    # low pass filter at f_c
+    for i in range(1,numsamples):
+        alpha = (2*math.pi*f_c*sample_period)/(1+2*math.pi*f_c*sample_period)
+        sample = alpha * signal[i] + (1-alpha)*lowpass[i-1]
+        lowpass.append(sample)
+
+    plot(lowpass,signal_info,1)
+
+    decimated = []
+    for i in range(0,numsamples,factor):
+        decimated.append(lowpass[i])
+
+    signal_info.sample_rate = signal_info.sample_rate/factor
+    return (decimated,signal_info)
+
 
 ##  uses the PLL design to decode the FM signal. For more PLL theory see the main.html file.
 ##  assumes that the center frequency is the radio station that you want to listen in on.
@@ -122,7 +153,7 @@ def pll_decode(signal,signal_info):
         #range of cmath.phase(*) is -pi to pi
         phase_err = wrap_subtract(cmath.phase(signal[i]),vco_phase)
 
-        ## low-pass filter
+        ## low-pass filter 
         alpha = (2*math.pi*f_c*sample_period)/(1+2*math.pi*f_c*sample_period)
         decoded_sample = alpha * signal[i] + (1-alpha)*decoded_signal[i-1]
         decoded_signal.append(decoded_sample)
@@ -146,10 +177,20 @@ if __name__ == "__main__":
     else:
         signal = read_file(filename,0)
     signal_info = ci.fetch(filename)
-    signal_fft = numpy.fft.fft(signal)
-    for i in range(0,len(signal_fft)):
-        temp = 20*math.log10(abs(signal_fft[i]))
-        signal_fft[i] = temp
-    plot(signal_fft,signal_info,1)
+
+   # plot(signal,signal_info,1) #take FFT and plot signal
+
+    factor = 8
+    if(len(sys.argv)>2):
+        try:
+            factor = int(sys.argv[2])
+        except:
+            factor = 8
+    decimated,signal_info = decimate(signal,signal_info,factor)
+
+    #plot(decimated,signal_info,1)
+
     decoded = pll_decode(signal,signal_info)
+
+    #plot(decoded,signal_info,1)
     print('success')
