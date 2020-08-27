@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 import numpy
 import pickle
 import sys
+import wave
 
 global CAPTURE_PATH
 CAPTURE_PATH = "./captures/"
 PREPROCESSED_PATH = "./captures/preprocessed/"
+OUTPUT_PATH = "./output/"
 
 ##  prompts the user to choose which file they wish to analyze.
 def choose_file():
@@ -116,17 +118,19 @@ def decimate(signal,signal_info,factor):
     f_c = signal_info.sample_rate/(2*factor)
     sample_period = 1/signal_info.sample_rate
     numsamples = len(signal)
-    lowpass = [complex(0,0)]
+    lowpass = numpy.fft.fft(signal)
+    freq_res = signal_info.sample_rate/numsamples
 
-    plot(signal,signal_info,1)
+    #plot(signal,signal_info,1)
 
     # low pass filter at f_c
-    for i in range(1,numsamples):
-        alpha = (2*math.pi*f_c*sample_period)/(1+2*math.pi*f_c*sample_period)
-        sample = alpha * signal[i] + (1-alpha)*lowpass[i-1]
-        lowpass.append(sample)
+    for i in range(0,numsamples):
+        freq = -1*(signal_info.sample_rate/2)+i*freq_res
+        if(abs(freq)>f_c):
+            lowpass[i]=complex(0,0.001)
+    lowpass = numpy.fft.ifft(lowpass)
 
-    plot(lowpass,signal_info,1)
+    #plot(lowpass,signal_info,1)
 
     decimated = []
     for i in range(0,numsamples,factor):
@@ -155,7 +159,7 @@ def pll_decode(signal,signal_info):
 
         ## low-pass filter 
         alpha = (2*math.pi*f_c*sample_period)/(1+2*math.pi*f_c*sample_period)
-        decoded_sample = alpha * signal[i] + (1-alpha)*decoded_signal[i-1]
+        decoded_sample = alpha * phase_err + (1-alpha)*decoded_signal[i-1]
         decoded_signal.append(decoded_sample)
 
         ## change VCO phase
@@ -169,6 +173,10 @@ def pll_decode(signal,signal_info):
 
     return decoded_signal
 
+def write_wav(signal,signal_info)
+    shortname = (signal_info.name).split('.')[0]
+    f = wave.open(OUTPUT_PATH+shortname+'.wav','wb')
+
 ##  main function
 if __name__ == "__main__":
     filename = choose_file()
@@ -178,7 +186,7 @@ if __name__ == "__main__":
         signal = read_file(filename,0)
     signal_info = ci.fetch(filename)
 
-   # plot(signal,signal_info,1) #take FFT and plot signal
+    plot(signal,signal_info,1) #take FFT and plot signal
 
     factor = 8
     if(len(sys.argv)>2):
@@ -187,10 +195,18 @@ if __name__ == "__main__":
         except:
             factor = 8
     decimated,signal_info = decimate(signal,signal_info,factor)
+    #this decimated signal focuses in on the radio station centered at 0 Hz
 
-    #plot(decimated,signal_info,1)
+    plot(decimated,signal_info,1)
 
     decoded = pll_decode(signal,signal_info)
+    #this decodes the FM radio station, but it is still WFM
 
-    #plot(decoded,signal_info,1)
-    print('success')
+    plot(decoded,signal_info,1)
+
+    mono_channel,signal_info = decimate(decoded,signal_info,10)
+    #this decimates again and brings the mono channel into focus
+
+    plot(mono_channel,signal_info,1)
+
+    write_wav(mono_channel,signal_info)
